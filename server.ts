@@ -11,7 +11,11 @@ Deno.serve((req) => {
     return new Response("not websocket", { status: 400 });
   }
 
-  const id = url.searchParams.get("id") ?? "default";
+  const id = url.searchParams.get("id");
+
+  if (!id) {
+    return new Response("missing id", { status: 400 });
+  }
 
   const { socket, response } = Deno.upgradeWebSocket(req);
 
@@ -24,10 +28,10 @@ Deno.serve((req) => {
   };
 
   socket.onmessage = (event) => {
-    for (const [_, ws] of clients.entries()) {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(event.data);
-      }
+    const target = clients.get(id);
+
+    if (target && target.readyState === WebSocket.OPEN) {
+      target.send(event.data);
     }
   };
 
